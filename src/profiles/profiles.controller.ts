@@ -1,10 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query, Param } from '@nestjs/common';
 
 @Controller('profiles')
 export class ProfilesController {
-    
-    @Get()
-    findAll(){
-        return [];
-    }
+
+   @Get()
+   findAll(@Query('location') location: string){
+     return [{location}];
+   }
+
+   @Get(':id')
+   findOne(@Param('id') id: string){
+    return {id};
+   }
+
 }
