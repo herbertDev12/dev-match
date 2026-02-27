@@ -1,74 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class ProfilesService {
-    private profiles = [
-        {
-            id: randomUUID(),
-            name: "Juan",
-            description: "ferferferferfer"
-        },
-        {
-            id: randomUUID(),
-            name: "Leo",
-            description: "ferferferferfer"
-        },
-        {
-            id: randomUUID(),
-            name: "Linkin Park",
-            description: "ferferferferfer"
-        },
-        {
-            id: randomUUID(),
-            name: "SQL",
-            description: "ferferferferfer"
-        }
-    ]
-    findAll(){
-        return this.profiles;
+  constructor(private readonly prisma: PrismaService) {}
+
+  findAll() {
+    return this.prisma.profile.findMany();
+  }
+
+  async findOne(id: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { id } });
+
+    if (!profile) {
+      throw new NotFoundException(`Profile with ID ${id} not found.`);
     }
 
-    create(profile: CreateProfileDto){
-        const createdProfile = {
-            id: randomUUID(),
-            ...profile
-        }
-        this.profiles.push(createdProfile);
-    }
+    return profile;
+  }
 
-    update(id: string, updateProfileDto: UpdateProfileDto){
-        const matchingProfile = this.profiles.find((profile) => profile.id === id);
+  create(createProfileDto: CreateProfileDto) {
+    return this.prisma.profile.create({ data: createProfileDto });
+  }
 
-        if(!matchingProfile){
-            throw new NotFoundException(`Profile with ID ${id} not found.`);
-        }
-        
-        matchingProfile.name = updateProfileDto.name;
-        matchingProfile.description = updateProfileDto.description;
+  async update(id: string, updateProfileDto: UpdateProfileDto) {
+    await this.findOne(id);
+    return this.prisma.profile.update({
+      where: { id },
+      data: updateProfileDto,
+    });
+  }
 
-        return matchingProfile;
-    }
-
-    remove(id: string): void{
-        const matchingProfileIndex = this.profiles.findIndex((profile) => profile.id === id);
-
-        if (matchingProfileIndex === -1){
-            throw new NotFoundException(`Profile with ID ${id} not found.`);
-        }
-
-        this.profiles.splice(matchingProfileIndex, 1);
-    }
-
-    findOne(id: string){ 
-        const matchingProfile = this.profiles.find((profile) => profile.id === id);
-
-        if (!matchingProfile){
-            throw new Error;
-        }
-
-        return matchingProfile;
-    }
+  async remove(id: string): Promise<void> {
+    await this.findOne(id); // throws NotFoundException if not found
+    await this.prisma.profile.delete({ where: { id } });
+  }
 }

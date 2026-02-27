@@ -1,8 +1,12 @@
-import { IsString, MinLength } from 'class-validator'
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
-export class UpdateProfileDto{
-    @IsString()
-    @MinLength(3)
-    name: string;
-    description: string;
+export class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
