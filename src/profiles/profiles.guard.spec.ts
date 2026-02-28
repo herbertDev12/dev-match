@@ -1,4 +1,4 @@
-import { ProfilesGuard } from './profiles.guard';
+import { ProfilesGuard } from './infrastructure/profiles.guard';
 
 describe('ProfilesGuard', () => {
   it('should be defined', () => {

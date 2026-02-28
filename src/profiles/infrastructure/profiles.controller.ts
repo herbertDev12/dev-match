@@ -9,18 +9,16 @@ import {
   HttpStatus,
   HttpCode,
   ParseUUIDPipe,
-  ValidationPipe,
   UseGuards,
 } from '@nestjs/common';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { ProfilesService } from './profiles.service';
+import { ProfilesService } from '../application/profiles.service';
+import { CreateProfileDto } from '../application/dto/create-profile.dto';
+import { UpdateProfileDto } from '../application/dto/update-profile.dto';
 import { ProfilesGuard } from './profiles.guard';
-import type { UUID } from 'crypto';
 
 @Controller('profiles')
 export class ProfilesController {
-  constructor(private profilesService: ProfilesService) {}
+  constructor(private readonly profilesService: ProfilesService) {}
 
   @Get()
   findAll() {
@@ -28,18 +26,18 @@ export class ProfilesController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: UUID) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.profilesService.findOne(id);
   }
 
   @Post()
-  create(@Body(new ValidationPipe()) createProfileDto: CreateProfileDto) {
+  create(@Body() createProfileDto: CreateProfileDto) {
     return this.profilesService.create(createProfileDto);
   }
 
   @Put(':id')
   update(
-    @Param('id', ParseUUIDPipe) id: UUID,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.profilesService.update(id, updateProfileDto);
@@ -48,7 +46,7 @@ export class ProfilesController {
   @Delete(':id')
   @UseGuards(ProfilesGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    this.profilesService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.profilesService.remove(id);
   }
 }
