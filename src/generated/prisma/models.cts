@@ -8,5 +8,6 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/User.cjs'
 export type * from './models/Profile.cjs'
 export type * from './commonInputTypes.cjs'

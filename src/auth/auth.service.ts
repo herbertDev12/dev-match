@@ -8,7 +8,9 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtPayload } from './dto/jwt-payload.interface';
+import { JwtPayload, AuthUser } from './dto/jwt-payload.interface';
+
+const SALT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
@@ -18,29 +20,58 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
-    // TODO: replace with a User model once added to Prisma schema
-    // For now this is a scaffold demonstrating the auth pattern.
-    throw new ConflictException(
-      'User model not yet in schema. Add a User model to prisma/schema.prisma to enable registration.',
-    );
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existing) {
+      throw new ConflictException('A user with that email already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        passwordHash,
+      },
+    });
+
+    return { accessToken: this.signToken({ sub: user.id, email: user.email }) };
   }
 
   async login(dto: LoginDto): Promise<{ accessToken: string }> {
-    // TODO: replace with a User model once added to Prisma schema
-    throw new UnauthorizedException(
-      'User model not yet in schema. Add a User model to prisma/schema.prisma to enable login.',
-    );
+    const user = await this.validateUser(dto.email, dto.password);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    return { accessToken: this.signToken({ sub: user.id, email: user.email }) };
+  }
+
+  /**
+   * Looks up the user by email and verifies the bcrypt password hash.
+   * Returns the user payload on success, or null on failure.
+   * Used internally by login — never exposes the hash externally.
+   */
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<AuthUser | null> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) return null;
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isMatch) return null;
+
+    return { id: user.id, email: user.email };
   }
 
   private signToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload);
-  }
-
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<{ id: string; email: string } | null> {
-    // TODO: look up user from DB and verify bcrypt hash
-    return null;
   }
 }
