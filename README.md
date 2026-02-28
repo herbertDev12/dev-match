@@ -5,7 +5,7 @@
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+  <p align="center">A RESTful API backend for a developer-matching platform, built with <a href="http://nodejs.org" target="_blank">Node.js</a> and NestJS.</p>
     <p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
@@ -23,12 +23,86 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**DevMatch** is a RESTful API backend for a developer-matching platform. It provides user authentication and developer profile management, exposing a clean JSON API with auto-generated Swagger documentation.
+
+### What it does
+
+- **Authentication** — User registration and login with hashed passwords (bcrypt) and JWT Bearer tokens (7-day expiry).
+- **Profiles** — Full CRUD for developer profiles, with protected write operations (create, update, delete) requiring a valid JWT.
+- **Standardized responses** — All responses are wrapped in a consistent envelope (`{ data, statusCode, timestamp, path }`).
+- **Error handling** — Global exception filter maps both NestJS HTTP exceptions and Prisma ORM errors (duplicate key → 409, not found → 404, etc.) to clean JSON error responses.
+- **API docs** — Swagger UI available at `http://localhost:3000/api`.
+
+### API endpoints
+
+| Method   | Path             | Auth required | Description                    |
+| -------- | ---------------- | :-----------: | ------------------------------ |
+| `POST`   | `/auth/register` |      No       | Create a new user account      |
+| `POST`   | `/auth/login`    |      No       | Authenticate and receive a JWT |
+| `GET`    | `/profiles`      |      No       | List all profiles              |
+| `GET`    | `/profiles/:id`  |      No       | Get a single profile by UUID   |
+| `POST`   | `/profiles`      |      Yes      | Create a new developer profile |
+| `PUT`    | `/profiles/:id`  |      Yes      | Update a profile               |
+| `DELETE` | `/profiles/:id`  |      Yes      | Delete a profile               |
+
+### Tech stack
+
+| Layer            | Technology                                                   |
+| ---------------- | ------------------------------------------------------------ |
+| Framework        | [NestJS](https://nestjs.com) v11 (on Express)                |
+| Language         | TypeScript 5 (ES2023 / NodeNext modules)                     |
+| Database         | PostgreSQL                                                   |
+| ORM              | [Prisma](https://www.prisma.io) v7 with `@prisma/adapter-pg` |
+| Auth             | JWT via `@nestjs/jwt` + Passport.js (`passport-jwt`)         |
+| Password hashing | bcryptjs (12 salt rounds)                                    |
+| Validation       | `class-validator` + `class-transformer`                      |
+| API docs         | `@nestjs/swagger` + Swagger UI                               |
+| Package manager  | pnpm                                                         |
+| Testing          | Jest + Supertest                                             |
+
+### Architecture
+
+The `profiles` module follows a **Clean/Layered Architecture**:
+
+- **Domain layer** (`domain/`) — Pure TypeScript entity and abstract repository interface; zero framework or ORM dependencies.
+- **Application layer** (`application/`) — Use-case service that depends only on the abstract interface.
+- **Infrastructure layer** (`infrastructure/`) — Prisma repository implementation and NestJS HTTP controller. Only this layer knows about Prisma.
+
+The repository is injected via a `Symbol` token (`PROFILE_REPOSITORY`), keeping the application layer fully decoupled from the ORM.
 
 ## Project setup
 
+### Prerequisites
+
+- Node.js (ES2023 compatible)
+- pnpm
+- A running PostgreSQL instance (default: `localhost:5432`)
+
+### Environment variables
+
+Create a `.env` file in the project root with the following variables:
+
+```bash
+DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>?schema=public"
+JWT_SECRET="your-secret-key"
+```
+
+### Install dependencies
+
 ```bash
 $ pnpm install
+```
+
+### Database setup
+
+Run Prisma migrations to create the database schema and generate the client:
+
+```bash
+# Apply migrations
+$ pnpm exec prisma migrate dev
+
+# Generate Prisma client
+$ pnpm run generate
 ```
 
 ## Compile and run the project
@@ -43,6 +117,9 @@ $ pnpm run start:dev
 # production mode
 $ pnpm run start:prod
 ```
+
+The API will be available at `http://localhost:3000`.  
+Swagger UI will be available at `http://localhost:3000/api`.
 
 ## Run tests
 
